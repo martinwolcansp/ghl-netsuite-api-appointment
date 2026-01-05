@@ -1,55 +1,66 @@
-
 from fastapi import FastAPI, Request
 import json
 
-app = FastAPI()
-
-@app.post("/ghl/appointment-created")
-async def receive_appointment(request: Request):
-    payload = await request.json()
-
-    print("🟢 WEBHOOK GHL RECIBIDO")
-    print(json.dumps(payload, indent=2))
-
-    return {"status": "payload logged"}
-
-
-
-"""
-from fastapi import FastAPI, Request
 from oauth import get_netsuite_token
 from netsuite import create_lead
 from mapper import build_netsuite_lead
-from ghl import get_ghl_contact  # 👈 nuevo helper
 
 app = FastAPI()
 
+
 @app.post("/ghl/appointment-created")
 async def receive_appointment(request: Request):
-    payload = await request.json()
+    try:
+        payload = await request.json()
 
-    print("📩 Appointment GHL recibido")
+        print("🟢 WEBHOOK GHL RECIBIDO")
+        print(json.dumps(payload, indent=2))
 
-    # 1️⃣ Extraer IDs del webhook
-    contact_id = payload["contact"]["id"]
-    appointment = payload["appointment"]
+        # =========================
+        # Datos clave del payload
+        # =========================
+        contact_id = payload.get("contact_id")
+        calendar = payload.get("calendar", {})
+        appointment_id = calendar.get("appointmentId")
+        appointment_status = calendar.get("appoinmentStatus")
 
-    # 2️⃣ Obtener contacto completo desde GHL
-    contact = get_ghl_contact(contact_id)
+        if not contact_id or not appointment_id:
+            print("❌ Payload incompleto: falta contact_id o appointment_id")
+            return {"status": "invalid payload"}
 
-    # 3️⃣ Construir payload para NetSuite
-    lead_payload = build_netsuite_lead(
-        contact=contact,
-        appointment=appointment
-    )
+        print(f"👤 Contact ID: {contact_id}")
+        print(f"📅 Appointment ID: {appointment_id}")
+        print(f"📌 Appointment Status: {appointment_status}")
 
-    # 4️⃣ Crear Lead en NetSuite
-    token = get_netsuite_token()
-    status, body = create_lead(token, lead_payload)
+        # =========================
+        # Construcción del Lead
+        # =========================
+        lead_payload = build_netsuite_lead(payload)
 
-    print(f"📤 NetSuite response: {status}")
+        print("📦 Payload NetSuite:")
+        print(json.dumps(lead_payload, indent=2))
 
-    return {
-        "netsuite_status": status
-    }
-"""
+        # =========================
+        # Creación del Lead en NetSuite
+        # (activar cuando quieras)
+        # =========================
+        token = get_netsuite_token()
+        status, body = create_lead(token, lead_payload)
+
+        print(f"📤 NetSuite response status: {status}")
+        print(f"📤 NetSuite response body: {body}")
+
+        return {
+            "status": "ok",
+            "netsuite_status": status
+        }
+
+    except Exception as e:
+        print("🔥 ERROR EN WEBHOOK")
+        print(str(e))
+
+        return {
+            "status": "error",
+            "message": str(e)
+        }
+
