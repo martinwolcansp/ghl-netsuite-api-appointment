@@ -45,20 +45,23 @@ def build_netsuite_lead(payload: dict) -> dict:
         # Dirección
         # =========================
         "addressbook": {
-            "items": [
-                {
-                    "defaultBilling": True,
-                    "defaultShipping": True,
-                    "addressbookaddress": {
-                        "addr1": payload.get("Direccion Instalacion")
-                                 or payload.get("Direccion")
-                                 or calendar.get("title"),
+             "items": [
+                    {
+                       "defaultBilling": True,
+                       "defaultShipping": True,
+                        "addressbookaddress": {
+                          "addr1": payload.get("Direccion Instalacion")
+                                    or payload.get("Direccion")
+                                    or calendar.get("title"),
 
-                        "city": location.get("city", "La Plata"),
-                        "zip": location.get("postalCode", "1000"),
-                        "country": location.get("country", "AR")
+                            "city": location.get("city", "La Plata"),
+                          "zip": location.get("postalCode", "1000"),
+                           "country": "AR",
+
+                           # 👇 OBLIGATORIO EN TU NS
+                           "custrecord_l54_provincia": "1"  # Buenos Aires (ajustar si cambia)
+                        }
                     }
-                }
-            ]
-        }
+                ]
+            }
     }
