@@ -1,3 +1,21 @@
+
+from fastapi import FastAPI, Request
+import json
+
+app = FastAPI()
+
+@app.post("/ghl/appointment-created")
+async def receive_appointment(request: Request):
+    payload = await request.json()
+
+    print("🟢 WEBHOOK GHL RECIBIDO")
+    print(json.dumps(payload, indent=2))
+
+    return {"status": "payload logged"}
+
+
+
+"""
 from fastapi import FastAPI, Request
 from oauth import get_netsuite_token
 from netsuite import create_lead
@@ -34,4 +52,4 @@ async def receive_appointment(request: Request):
     return {
         "netsuite_status": status
     }
-
+"""
