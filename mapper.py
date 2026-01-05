@@ -1,58 +1,62 @@
 # mapper.py
 
-def build_netsuite_lead(contact: dict, appointment: dict) -> dict:
-
-    full_name = f"{contact.get('firstName', '')} {contact.get('lastName', '')}".strip()
+def build_netsuite_lead(payload: dict) -> dict:
+    calendar = payload.get("calendar", {})
+    location = payload.get("location", {})
 
     return {
-        # Nombre del lead
-        "companyName": full_name or "Lead desde GHL",
+        # =========================
+        # Datos principales
+        # =========================
+        "companyName": payload.get("full_name") or "Lead desde GHL",
+        "email": payload.get("email"),
+        "phone": payload.get("phone"),
 
-        # Email
-        "email": contact.get("email"),
-
-        # Estado Lead
+        # =========================
+        # Estado del Lead
+        # =========================
         "entityStatus": {
             "id": "37"  # Lead
         },
 
-        # Obligatorio OneWorld
+        # =========================
+        # OneWorld
+        # =========================
         "subsidiary": {
             "id": "2"
         },
 
-        # Origen del lead
+        # =========================
+        # Origen
+        # =========================
         "leadsource": {
             "id": 135179
         },
 
-        # Interesado en
-        "custentity_ap_sp_interesado_en_form_onli": {
-            "id": 1
-        },
+        # =========================
+        # Custom fields (reales)
+        # =========================
+        "custentity_ghl_contact_id": payload.get("contact_id"),
+        "custentity_ghl_appointment_id": calendar.get("appointmentId"),
+        "custentity_ghl_calendar_name": calendar.get("calendarName"),
+        "custentity_ghl_appointment_title": calendar.get("title"),
 
-        # Forma de contacto
-        "custentity_ap_sp_forma_de_contactoi": {
-            "id": 1
-        },
-
-        # 🔗 Trazabilidad GHL
-        "custentity_ghl_contact_id": contact.get("id"),
-        "custentity_ghl_appointment_id": appointment.get("id"),
-        "custentity_ghl_appointment_date": appointment.get("startTime"),
-
-        # Dirección (mínima, pero válida)
+        # =========================
+        # Dirección
+        # =========================
         "addressbook": {
             "items": [
                 {
                     "defaultBilling": True,
                     "defaultShipping": True,
                     "addressbookaddress": {
-                        "addr1": contact.get("address1") or full_name,
-                        "custrecord_l54_provincia": "1",
-                        "city": contact.get("city") or "La Plata",
-                        "zip": contact.get("postalCode") or "1000",
-                        "country": "AR"
+                        "addr1": payload.get("Direccion Instalacion")
+                                 or payload.get("Direccion")
+                                 or calendar.get("title"),
+
+                        "city": location.get("city", "La Plata"),
+                        "zip": location.get("postalCode", "1000"),
+                        "country": location.get("country", "AR")
                     }
                 }
             ]
