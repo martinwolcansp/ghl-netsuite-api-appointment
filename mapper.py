@@ -63,12 +63,23 @@ def build_netsuite_lead(payload: dict) -> dict:
                     "defaultBilling": True,
                     "defaultShipping": True,
                     "addressbookaddress": {
-                        "addr1": payload.get("Direccion Instalacion")
-                                 or payload.get("Direccion")
-                                 or calendar.get("title")
-                                 or payload.get("full_name"),
+                        # Calle
+                        "addr1": payload.get("Direccion Calle"),
 
-                        # 👇 EXACTAMENTE como el mapper que funciona
+                        # Número
+                        "addr2": payload.get("Direccion Numero"),
+
+                        # Piso
+                        "addr3": payload.get("Direccion Piso"),
+
+                        # Entre calles (custom)
+                        "custrecord_3k_calle_entre_1": payload.get("Direccion Entre Calle 1"),
+                        "custrecord_3k_calle_entre_2": payload.get("Direccion Entre Calle 2"),
+
+                        # Depto (custom)
+                        "custrecord_3k_direccion_departamento": payload.get("Direccion Depto"),
+
+                        # Obligatorios NS
                         "custrecord_l54_provincia": "1",
                         "city": "La Plata",
                         "zip": "1000",
