@@ -50,6 +50,7 @@ def build_netsuite_lead(payload: dict) -> dict:
         # =========================
         # Referencias GHL
         # =========================
+        "custentity_ghl_interesado_en": payload.get("Interesado en"),
         "custentity_ghl_contact_id": payload.get("contact_id"),
         "custentity_ghl_appointment_id": calendar.get("appointmentId"),
         "custentity_ghl_appointment_title": calendar.get("title"),
