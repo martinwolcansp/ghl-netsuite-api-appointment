@@ -1,8 +1,9 @@
+# main.py
 from fastapi import FastAPI, Request
 import json
 
 from oauth import get_netsuite_token
-from netsuite import create_lead
+from netsuite import create_lead, ghl_contact_exists
 from mapper import build_netsuite_lead
 
 app = FastAPI()
@@ -26,11 +27,26 @@ async def receive_appointment(request: Request):
 
         if not contact_id or not appointment_id:
             print("❌ Payload incompleto: falta contact_id o appointment_id")
-            return {"status": "invalid payload"}
+            return {
+                "status": "invalid_payload",
+                "reason": "missing_contact_or_appointment"
+            }
 
         print(f"👤 Contact ID: {contact_id}")
         print(f"📅 Appointment ID: {appointment_id}")
         print(f"📌 Appointment Status: {appointment_status}")
+
+        # =========================
+        # 🔐 VALIDACIÓN DUPLICADO
+        # =========================
+        token = get_netsuite_token()
+
+        if ghl_contact_exists(token, contact_id):
+            print(f"⛔ Lead duplicado ignorado | contact_id={contact_id}")
+            return {
+                "status": "skipped",
+                "reason": "duplicate_contact_id"
+            }
 
         # =========================
         # Construcción del Lead
@@ -42,16 +58,14 @@ async def receive_appointment(request: Request):
 
         # =========================
         # Creación del Lead en NetSuite
-        # (activar cuando quieras)
         # =========================
-        token = get_netsuite_token()
         status, body = create_lead(token, lead_payload)
 
         print(f"📤 NetSuite response status: {status}")
         print(f"📤 NetSuite response body: {body}")
 
         return {
-            "status": "ok",
+            "status": "created",
             "netsuite_status": status
         }
 
@@ -63,4 +77,3 @@ async def receive_appointment(request: Request):
             "status": "error",
             "message": str(e)
         }
-

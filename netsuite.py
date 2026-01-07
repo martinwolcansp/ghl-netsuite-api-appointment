@@ -5,8 +5,12 @@ import json
 
 ACCOUNT_ID = os.getenv("NETSUITE_ACCOUNT_ID")
 
-BASE_URL = f"https://{ACCOUNT_ID}.suitetalk.api.netsuite.com/services/rest/record/v1"
-CUSTOMER_URL = f"{BASE_URL}/customer"
+BASE_URL = f"https://{ACCOUNT_ID}.suitetalk.api.netsuite.com/services/rest"
+RECORD_URL = f"{BASE_URL}/record/v1"
+QUERY_URL = f"{BASE_URL}/query/v1/suiteql"
+
+CUSTOMER_URL = f"{RECORD_URL}/customer"
+
 
 def create_lead(token: str, payload: dict):
     headers = {
@@ -28,7 +32,45 @@ def create_lead(token: str, payload: dict):
     )
 
     print("📥 NetSuite status:", response.status_code)
-    print("📥 NetSuite headers:", dict(response.headers))
     print("📥 NetSuite body:", response.text)
 
     return response.status_code, response.text
+
+
+def ghl_contact_exists(token: str, ghl_contact_id: str) -> bool:
+    """
+    Verifica si ya existe un Lead/Customer con el contact_id de GHL
+    """
+
+    if not ghl_contact_id:
+        return False
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
+
+    body = {
+        "q": """
+            SELECT id
+            FROM entity
+            WHERE custentity_ghl_contact_id = ?
+        """,
+        "params": [ghl_contact_id]
+    }
+
+    response = requests.post(
+        QUERY_URL,
+        headers=headers,
+        json=body,
+        timeout=30
+    )
+
+    if response.status_code != 200:
+        print("⚠️ Error consultando NetSuite (SuiteQL)")
+        print(response.text)
+        return False
+
+    data = response.json()
+    return len(data.get("items", [])) > 0
