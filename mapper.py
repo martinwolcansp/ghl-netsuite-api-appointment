@@ -19,14 +19,31 @@ INTERESADO_EN_MAP = {
     "cerco electrico": 20,
 }
 
+FORMA_CONTACTO_MAP = {
+    "telefono": 1,
+    "presencial en sp": 2,
+    "centric": 3,
+    "instagram": 4,
+    "facebook": 5,
+    "mail": 6,
+    "tik tok": 7,
+    "whatsapp business": 8,
+}
+
 
 def normalize(value):
+    """
+    Normaliza texto:
+    - strip
+    - lower
+    - elimina acentos
+    """
     if not isinstance(value, str):
         return None
+
     value = value.strip().lower()
     value = unicodedata.normalize("NFD", value)
-    value = "".join(c for c in value if unicodedata.category(c) != "Mn")
-    return value
+    return "".join(c for c in value if unicodedata.category(c) != "Mn")
 
 
 def build_netsuite_lead(payload: dict) -> dict:
@@ -37,12 +54,19 @@ def build_netsuite_lead(payload: dict) -> dict:
     # Interesado en (GHL → NetSuite)
     # ----------------------------------
     interesado_en_raw = payload.get("Interesado en")
-    interesado_en_norm = normalize(interesado_en_raw)
-    interesado_en_id = INTERESADO_EN_MAP.get(interesado_en_norm)
+    interesado_en_id = INTERESADO_EN_MAP.get(
+        normalize(interesado_en_raw),
+        1  # fallback
+    )
 
-    if not interesado_en_id:
-        # fallback controlado
-        interesado_en_id = 9
+    # ----------------------------------
+    # Forma de contacto (GHL → NetSuite)
+    # ----------------------------------
+    forma_contacto_raw = payload.get("Forma de Contacto")
+    forma_contacto_id = FORMA_CONTACTO_MAP.get(
+        normalize(forma_contacto_raw),
+        1  # fallback
+    )
 
     return {
         # =========================
@@ -60,7 +84,7 @@ def build_netsuite_lead(payload: dict) -> dict:
         # Estado Lead
         # =========================
         "entityStatus": {
-            "id": "37"
+            "id": "37"  # Lead
         },
 
         # =========================
@@ -84,13 +108,13 @@ def build_netsuite_lead(payload: dict) -> dict:
             "id": interesado_en_id
         },
         "custentity_ap_sp_forma_de_contactoi": {
-            "id": 1
+            "id": forma_contacto_id
         },
 
         # =========================
         # Referencias GHL
         # =========================
-        "custentity_ghl_interesado_en": interesado_en_id,
+        "custentity_ghl_interesado_en": interesado_en_raw,
         "custentity_ghl_contact_id": payload.get("contact_id"),
         "custentity_ghl_appointment_id": calendar.get("appointmentId"),
         "custentity_ghl_appointment_title": calendar.get("title"),
