@@ -1,10 +1,5 @@
 # mapper.py
 
-def build_netsuite_lead(payload: dict) -> dict:
-    location = payload.get("location", {}) or {}
-    calendar = payload.get("calendar", {}) or {}
-
-
                 INTERESADO_EN_MAP = {
                 "alarmas": 1,
                 "ampliaciones": 4,
