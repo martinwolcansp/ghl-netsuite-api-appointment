@@ -1,4 +1,3 @@
-# main.py
 from fastapi import FastAPI, Request
 import json
 
@@ -21,7 +20,7 @@ async def receive_appointment(request: Request):
         # Datos clave del payload
         # =========================
         contact_id = payload.get("contact_id")
-        calendar = payload.get("calendar", {})
+        calendar = payload.get("calendar", {}) or {}
         appointment_id = calendar.get("appointmentId")
         appointment_status = calendar.get("appoinmentStatus")
 
@@ -29,24 +28,12 @@ async def receive_appointment(request: Request):
             print("❌ Payload incompleto: falta contact_id o appointment_id")
             return {
                 "status": "invalid_payload",
-                "reason": "missing_contact_or_appointment"
+                "reason": "missing contact_id or appointment_id"
             }
 
-        print(f"👤 Contact ID: {contact_id}")
+        print(f"👤 GHL Contact ID: {contact_id}")
         print(f"📅 Appointment ID: {appointment_id}")
         print(f"📌 Appointment Status: {appointment_status}")
-
-        # =========================
-        # 🔐 VALIDACIÓN DUPLICADO
-        # =========================
-        token = get_netsuite_token()
-
-        if ghl_contact_exists(token, contact_id):
-            print(f"⛔ Lead duplicado ignorado | contact_id={contact_id}")
-            return {
-                "status": "skipped",
-                "reason": "duplicate_contact_id"
-            }
 
         # =========================
         # Construcción del Lead
@@ -57,7 +44,23 @@ async def receive_appointment(request: Request):
         print(json.dumps(lead_payload, indent=2))
 
         # =========================
-        # Creación del Lead en NetSuite
+        # Autenticación NetSuite
+        # =========================
+        token = get_netsuite_token()
+
+        # =========================
+        # Validación de duplicados
+        # =========================
+        if ghl_contact_exists(token, contact_id):
+            print(f"⏭️ Lead ya existe en NetSuite para GHL Contact ID {contact_id}")
+            return {
+                "status": "skipped",
+                "reason": "lead already exists",
+                "ghl_contact_id": contact_id
+            }
+
+        # =========================
+        # Creación del Lead
         # =========================
         status, body = create_lead(token, lead_payload)
 
@@ -65,7 +68,7 @@ async def receive_appointment(request: Request):
         print(f"📤 NetSuite response body: {body}")
 
         return {
-            "status": "created",
+            "status": "ok",
             "netsuite_status": status
         }
 
