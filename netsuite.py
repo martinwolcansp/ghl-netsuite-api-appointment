@@ -6,10 +6,49 @@ import json
 ACCOUNT_ID = os.getenv("NETSUITE_ACCOUNT_ID")
 
 BASE_URL = f"https://{ACCOUNT_ID}.suitetalk.api.netsuite.com/services/rest"
-RECORD_URL = f"{BASE_URL}/record/v1"
-QUERY_URL = f"{BASE_URL}/query/v1/suiteql"
+SUITEQL_URL = f"{BASE_URL}/query/v1/suiteql"
+CUSTOMER_URL = f"{BASE_URL}/record/v1/customer"
 
-CUSTOMER_URL = f"{RECORD_URL}/customer"
+
+def ghl_contact_exists(token: str, ghl_contact_id: str) -> bool:
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Prefer": "transient"
+    }
+
+    query = f"""
+        SELECT id
+        FROM customer
+        WHERE custentity_ghl_contact_id = '{ghl_contact_id}'
+    """
+
+    body = {
+        "q": query
+    }
+
+    print("🧪 SuiteQL query:")
+    print(query.strip())
+
+    response = requests.post(
+        SUITEQL_URL,
+        headers=headers,
+        json=body,
+        timeout=30
+    )
+
+    print("🧪 SuiteQL status:", response.status_code)
+    print("🧪 SuiteQL response:", response.text)
+
+    if response.status_code != 200:
+        # si falla SuiteQL, NO crear lead (fail-safe)
+        raise Exception("Error ejecutando SuiteQL en NetSuite")
+
+    data = response.json()
+    items = data.get("items", [])
+
+    return len(items) > 0
 
 
 def create_lead(token: str, payload: dict):
@@ -20,10 +59,6 @@ def create_lead(token: str, payload: dict):
         "Prefer": "return=representation"
     }
 
-    print("🔗 NetSuite URL:", CUSTOMER_URL)
-    print("📦 Payload enviado a NetSuite:")
-    print(json.dumps(payload, indent=2))
-
     response = requests.post(
         CUSTOMER_URL,
         headers=headers,
@@ -31,40 +66,5 @@ def create_lead(token: str, payload: dict):
         timeout=30
     )
 
-    print("📥 NetSuite status:", response.status_code)
-    print("📥 NetSuite body:", response.text)
-
     return response.status_code, response.text
 
-
-def ghl_contact_exists(token: str, ghl_contact_id: str) -> bool:
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json",
-        "Accept": "application/json"
-    }
-
-    body = {
-        "q": """
-            SELECT id, entityid, custentity_ghl_contact_id
-            FROM entity
-            WHERE custentity_ghl_contact_id = ?
-        """,
-        "params": [ghl_contact_id]
-    }
-
-    response = requests.post(
-        QUERY_URL,
-        headers=headers,
-        json=body,
-        timeout=30
-    )
-
-    print("🧪 SuiteQL status:", response.status_code)
-    print("🧪 SuiteQL response:", response.text)
-
-    if response.status_code != 200:
-        return False
-
-    data = response.json()
-    return len(data.get("items", [])) > 0
