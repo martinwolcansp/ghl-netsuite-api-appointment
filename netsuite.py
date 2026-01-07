@@ -38,13 +38,6 @@ def create_lead(token: str, payload: dict):
 
 
 def ghl_contact_exists(token: str, ghl_contact_id: str) -> bool:
-    """
-    Verifica si ya existe un Lead/Customer con el contact_id de GHL
-    """
-
-    if not ghl_contact_id:
-        return False
-
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
@@ -53,7 +46,7 @@ def ghl_contact_exists(token: str, ghl_contact_id: str) -> bool:
 
     body = {
         "q": """
-            SELECT id
+            SELECT id, entityid, custentity_ghl_contact_id
             FROM entity
             WHERE custentity_ghl_contact_id = ?
         """,
@@ -67,9 +60,10 @@ def ghl_contact_exists(token: str, ghl_contact_id: str) -> bool:
         timeout=30
     )
 
+    print("🧪 SuiteQL status:", response.status_code)
+    print("🧪 SuiteQL response:", response.text)
+
     if response.status_code != 200:
-        print("⚠️ Error consultando NetSuite (SuiteQL)")
-        print(response.text)
         return False
 
     data = response.json()
