@@ -1,37 +1,48 @@
 # mapper.py
-
-                INTERESADO_EN_MAP = {
-                "alarmas": 1,
-                "ampliaciones": 4,
-                "consorcios": 6,
-                "otros servicios": 9,
-                "alarmas y camaras": 13,
-                "comercio seguro": 16,
-                "cámaras": 17,
-                "obra segura": 18,
-                "seguridad fisica": 19,
-                "cerco electrico": 20,
-            }
-
-            def normalize(value):
-                return value.strip().lower() if isinstance(value, str) else None
+import unicodedata
 
 
-            def build_netsuite_lead(payload: dict) -> dict:
-                location = payload.get("location", {}) or {}
-                calendar = payload.get("calendar", {}) or {}
+# ==========================
+# MAPEOS GHL → NETSUITE
+# ==========================
 
-                # ----------------------------------
-                # Interesado en (GHL → NetSuite)
-                # ----------------------------------
-                interesado_en_raw = payload.get("Interesado en")
-                interesado_en_norm = normalize(interesado_en_raw)
-                interesado_en_id = INTERESADO_EN_MAP.get(interesado_en_norm)
+INTERESADO_EN_MAP = {
+    "alarmas": 1,
+    "ampliaciones": 4,
+    "consorcios": 6,
+    "otros servicios": 9,
+    "alarmas y camaras": 13,
+    "comercio seguro": 16,
+    "camaras": 17,
+    "obra segura": 18,
+    "seguridad fisica": 19,
+    "cerco electrico": 20,
+}
 
-                if not interesado_en_id:
-                    # Opcional: log o fallback
-                    # logger.warning(f"[MAPPER] Valor 'Interesado en' no mapeado: {interesado_en_raw}")
-                    interesado_en_id = 1  # fallback si el negocio lo permite
+
+def normalize(value):
+    if not isinstance(value, str):
+        return None
+    value = value.strip().lower()
+    value = unicodedata.normalize("NFD", value)
+    value = "".join(c for c in value if unicodedata.category(c) != "Mn")
+    return value
+
+
+def build_netsuite_lead(payload: dict) -> dict:
+    location = payload.get("location", {}) or {}
+    calendar = payload.get("calendar", {}) or {}
+
+    # ----------------------------------
+    # Interesado en (GHL → NetSuite)
+    # ----------------------------------
+    interesado_en_raw = payload.get("Interesado en")
+    interesado_en_norm = normalize(interesado_en_raw)
+    interesado_en_id = INTERESADO_EN_MAP.get(interesado_en_norm)
+
+    if not interesado_en_id:
+        # fallback controlado
+        interesado_en_id = 1
 
     return {
         # =========================
@@ -49,7 +60,7 @@
         # Estado Lead
         # =========================
         "entityStatus": {
-            "id": "37"  # Lead
+            "id": "37"
         },
 
         # =========================
@@ -69,10 +80,9 @@
         # =========================
         # Campos obligatorios SP
         # =========================
-          "custentity_ap_sp_interesado_en_form_onli": {
+        "custentity_ap_sp_interesado_en_form_onli": {
             "id": interesado_en_id
         },
-
         "custentity_ap_sp_forma_de_contactoi": {
             "id": 1
         },
@@ -94,23 +104,14 @@
                     "defaultBilling": True,
                     "defaultShipping": True,
                     "addressbookaddress": {
-                        # Calle
                         "addr1": payload.get("Direccion Calle"),
-
-                        # Número
                         "addr2": payload.get("Direccion Numero"),
-
-                        # Piso
                         "addr3": payload.get("Direccion Piso"),
 
-                        # Entre calles (custom)
                         "custrecord_3k_calle_entre_1": payload.get("Direccion Entre Calle 1"),
                         "custrecord_3k_calle_entre_2": payload.get("Direccion Entre Calle 2"),
-
-                        # Depto (custom)
                         "custrecord_3k_direccion_departamento": payload.get("Direccion Depto"),
 
-                        # Obligatorios NS
                         "custrecord_l54_provincia": "1",
                         "city": "La Plata",
                         "zip": "1000",
