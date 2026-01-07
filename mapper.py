@@ -42,7 +42,7 @@ def build_netsuite_lead(payload: dict) -> dict:
 
     if not interesado_en_id:
         # fallback controlado
-        interesado_en_id = 1
+        interesado_en_id = 9
 
     return {
         # =========================
@@ -90,7 +90,7 @@ def build_netsuite_lead(payload: dict) -> dict:
         # =========================
         # Referencias GHL
         # =========================
-        "custentity_ghl_interesado_en": interesado_en_raw,
+        "custentity_ghl_interesado_en": interesado_en_id,
         "custentity_ghl_contact_id": payload.get("contact_id"),
         "custentity_ghl_appointment_id": calendar.get("appointmentId"),
         "custentity_ghl_appointment_title": calendar.get("title"),
