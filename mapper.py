@@ -28,6 +28,7 @@ FORMA_CONTACTO_MAP = {
     "mail": 6,
     "tik tok": 7,
     "whatsapp business": 8,
+    "otro": 9,
 }
 
 
@@ -56,7 +57,7 @@ def build_netsuite_lead(payload: dict) -> dict:
     interesado_en_raw = payload.get("Interesado en")
     interesado_en_id = INTERESADO_EN_MAP.get(
         normalize(interesado_en_raw),
-        1  # fallback
+        9  # fallback
     )
 
     # ----------------------------------
@@ -65,7 +66,7 @@ def build_netsuite_lead(payload: dict) -> dict:
     forma_contacto_raw = payload.get("Forma de Contacto")
     forma_contacto_id = FORMA_CONTACTO_MAP.get(
         normalize(forma_contacto_raw),
-        1  # fallback
+        9  # fallback
     )
 
     return {
