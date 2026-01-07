@@ -31,6 +31,18 @@ FORMA_CONTACTO_MAP = {
     "otro": 9,
 }
 
+LEADSOURCE_MAP = {
+    "anuncios": 135179,
+    "carteleria": -5,
+    "ex-cliente": 136971,
+    "google": 640143,
+    "otro": -6,
+    "pagina web sp": 135178,
+    "referido": 135180,
+    "venta proactiva": 643783,
+    "ya es cliente": 143402,
+}
+
 
 def normalize(value):
     """
@@ -48,7 +60,6 @@ def normalize(value):
 
 
 def build_netsuite_lead(payload: dict) -> dict:
-    location = payload.get("location", {}) or {}
     calendar = payload.get("calendar", {}) or {}
 
     # ----------------------------------
@@ -57,7 +68,7 @@ def build_netsuite_lead(payload: dict) -> dict:
     interesado_en_raw = payload.get("Interesado en")
     interesado_en_id = INTERESADO_EN_MAP.get(
         normalize(interesado_en_raw),
-        9  # fallback
+        9  # fallback: Otros servicios
     )
 
     # ----------------------------------
@@ -66,7 +77,16 @@ def build_netsuite_lead(payload: dict) -> dict:
     forma_contacto_raw = payload.get("Forma de Contacto")
     forma_contacto_id = FORMA_CONTACTO_MAP.get(
         normalize(forma_contacto_raw),
-        9  # fallback
+        9  # fallback: Otro
+    )
+
+    # ----------------------------------
+    # Origen del cliente / Lead Source
+    # ----------------------------------
+    origen_cliente_raw = payload.get("Origen del Cliente")
+    leadsource_id = LEADSOURCE_MAP.get(
+        normalize(origen_cliente_raw),
+        -6  # fallback: Otro
     )
 
     return {
@@ -99,7 +119,7 @@ def build_netsuite_lead(payload: dict) -> dict:
         # Origen del lead
         # =========================
         "leadsource": {
-            "id": 135179
+            "id": leadsource_id
         },
 
         # =========================
@@ -116,6 +136,7 @@ def build_netsuite_lead(payload: dict) -> dict:
         # Referencias GHL
         # =========================
         "custentity_ghl_interesado_en": interesado_en_raw,
+        "custentity_ghl_origen_del_cliente": origen_cliente_raw,
         "custentity_ghl_contact_id": payload.get("contact_id"),
         "custentity_ghl_appointment_id": calendar.get("appointmentId"),
         "custentity_ghl_appointment_title": calendar.get("title"),
