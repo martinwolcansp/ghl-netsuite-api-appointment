@@ -14,7 +14,7 @@ async def receive_appointment(request: Request):
         payload = await request.json()
 
         print("🟢 WEBHOOK GHL RECIBIDO")
-        print(json.dumps(payload, indent=2))
+        #print(json.dumps(payload, indent=2))
 
         # =========================
         # Datos clave del payload
