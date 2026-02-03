@@ -1,5 +1,6 @@
 # mapper.py
 import unicodedata
+import re
 
 
 # ==========================
@@ -44,6 +45,14 @@ LEADSOURCE_MAP = {
 }
 
 
+# ==========================
+# HELPERS
+# ==========================
+
+def zero_if_empty(value):
+    return value if value not in (None, "", " ") else 0
+
+
 def normalize(value):
     """
     Normaliza texto:
@@ -59,8 +68,47 @@ def normalize(value):
     return "".join(c for c in value if unicodedata.category(c) != "Mn")
 
 
+def split_phone(phone_raw):
+    """
+    Divide teléfono en código de área y número (Argentina)
+    """
+    if not phone_raw:
+        return None, None
+
+    digits = re.sub(r"\D", "", str(phone_raw))
+
+    # Quitar prefijo país
+    if digits.startswith("54"):
+        digits = digits[2:]
+
+    # Quitar 0 inicial
+    if digits.startswith("0"):
+        digits = digits[1:]
+
+    # Heurística códigos AR
+    if len(digits) >= 10:
+        area = digits[:3]
+        number = digits[3:]
+    elif len(digits) >= 8:
+        area = digits[:2]
+        number = digits[2:]
+    else:
+        return None, digits
+
+    return area, number
+
+
+# ==========================
+# BUILDER NETSUITE
+# ==========================
+
 def build_netsuite_lead(payload: dict) -> dict:
     calendar = payload.get("calendar", {}) or {}
+
+    # ----------------------------------
+    # Teléfono
+    # ----------------------------------
+    area_code, phone_number = split_phone(payload.get("phone"))
 
     # ----------------------------------
     # Interesado en (GHL → NetSuite)
@@ -99,7 +147,11 @@ def build_netsuite_lead(payload: dict) -> dict:
         # Contacto
         # =========================
         "email": payload.get("email"),
-        "phone": payload.get("phone"),
+        "phone": phone_number,
+        "altphone": phone_number,
+
+        "custentity_ap_codigo_de_area_telefono": area_code,
+        "custentity_ap_codigo_area_tel_celular": area_code,
 
         # =========================
         # Estado Lead
@@ -152,15 +204,18 @@ def build_netsuite_lead(payload: dict) -> dict:
                     "addressbookaddress": {
                         "addr1": payload.get("Direccion Calle"),
                         "addr2": payload.get("Direccion Numero"),
-                        "addr3": payload.get("Direccion Piso"),
+                        "addr3": zero_if_empty(payload.get("Direccion Piso")),
 
-                        "custrecord_3k_calle_entre_1": payload.get("Direccion Entre Calle 1"),
-                        "custrecord_3k_calle_entre_2": payload.get("Direccion Entre Calle 2"),
-                        "custrecord_3k_direccion_departamento": payload.get("Direccion Depto"),
+                        "custrecord_3k_calle_entre_1": zero_if_empty(payload.get("Direccion Entre Calle 1")),
+                        "custrecord_3k_calle_entre_2": zero_if_empty(payload.get("Direccion Entre Calle 2")),
+                        "custrecord_3k_direccion_departamento": zero_if_empty(
+                            payload.get("Direccion Depto")
+                        ),
 
-                        "custrecord_l54_provincia": "1",
+                        "custrecord_l54_provincia": "2",
+                        "state": "La Plata",
                         "city": "La Plata",
-                        "zip": "1000",
+                        "zip": "1900",
                         "country": "AR"
                     }
                 }
