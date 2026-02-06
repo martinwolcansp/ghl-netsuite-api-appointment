@@ -69,15 +69,9 @@ def normalize(value):
 
 
 def split_phone(phone_raw):
-    """
-    Normaliza y separa teléfono argentino en código de área y número.
-    Soporta:
-    +54, 0054, 0, 15, espacios, guiones, paréntesis
-    """
     if not phone_raw:
         return None, None
 
-    # Solo dígitos
     digits = re.sub(r"\D", "", str(phone_raw))
 
     if not digits:
@@ -89,38 +83,37 @@ def split_phone(phone_raw):
     elif digits.startswith("54"):
         digits = digits[2:]
 
-    # Quitar 0 inicial
+    # 👉 CLAVE: quitar prefijo celular internacional
+    if digits.startswith("9"):
+        digits = digits[1:]
+
+    # Quitar 0 nacional
     if digits.startswith("0"):
         digits = digits[1:]
 
-    # Quitar prefijo celular antiguo "15"
+    # Quitar 15 antiguo
     if digits.startswith("15"):
         digits = digits[2:]
 
     length = len(digits)
 
-    # Casos comunes Argentina
     if length == 10:
-        # Ej: 2215123456
         area = digits[:3]
         number = digits[3:]
     elif length == 9:
-        # Ej: 221123456
         area = digits[:3]
         number = digits[3:]
     elif length == 8:
-        # Ej: 22123456
         area = digits[:2]
         number = digits[2:]
     elif length > 10:
-        # Nos quedamos con los últimos 10
         area = digits[-10:-7]
         number = digits[-7:]
     else:
-        # Demasiado corto → fallback
         return None, digits
 
     return area, number
+
 
 
 
