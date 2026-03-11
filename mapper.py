@@ -83,7 +83,7 @@ def split_phone(phone_raw):
     elif digits.startswith("54"):
         digits = digits[2:]
 
-    # 👉 CLAVE: quitar prefijo celular internacional
+    # 👉 quitar prefijo celular internacional
     if digits.startswith("9"):
         digits = digits[1:]
 
@@ -98,22 +98,30 @@ def split_phone(phone_raw):
     length = len(digits)
 
     if length == 10:
-        area = digits[:3]
-        number = digits[3:]
+        # Caso especial AMBA (11)
+        if digits.startswith("11"):
+            area = digits[:2]
+            number = digits[2:]
+        else:
+            area = digits[:3]
+            number = digits[3:]
+
     elif length == 9:
         area = digits[:3]
         number = digits[3:]
+
     elif length == 8:
         area = digits[:2]
         number = digits[2:]
+
     elif length > 10:
         area = digits[-10:-7]
         number = digits[-7:]
+
     else:
         return None, digits
 
     return area, number
-
 
 
 
@@ -156,11 +164,21 @@ def build_netsuite_lead(payload: dict) -> dict:
         -6  # fallback: Otro
     )
 
+    # ----------------------------------
+    # Nombre contacto (Apellido + Nombre)
+    # ----------------------------------
+    first_name = payload.get("first_name") or payload.get("firstName") or ""
+    last_name = payload.get("last_name") or payload.get("lastName") or ""
+
+    company_name = " ".join(filter(None, [last_name.strip(), first_name.strip()]))
+
+
     return {
+    
         # =========================
         # Nombre del lead
         # =========================
-        "companyName": payload.get("full_name") or "Lead desde GHL",
+        "companyName": company_name or "Lead desde GHL",
 
         # =========================
         # Contacto
