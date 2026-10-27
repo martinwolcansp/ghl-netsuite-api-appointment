@@ -1,4 +1,6 @@
 # oauth.py
+import base64
+import json
 import os
 import time
 import requests
@@ -58,3 +60,18 @@ def get_netsuite_token():
 
     return _token_cache["access_token"]
 
+
+# 🔹 VENCIMIENTO DEL REFRESH TOKEN
+def vencimiento_refresh_token():
+    """
+    Fecha de vencimiento (epoch, segundos) del refresh token, leída del
+    propio token: es un JWT y trae el campo "exp". No valida la firma, sólo
+    lee la fecha. Devuelve None si no se puede leer.
+    """
+    token = _token_cache["refresh_token"] or ""
+    try:
+        parte = token.split(".")[1]
+        parte += "=" * (-len(parte) % 4)
+        return int(json.loads(base64.urlsafe_b64decode(parte))["exp"])
+    except Exception:
+        return None

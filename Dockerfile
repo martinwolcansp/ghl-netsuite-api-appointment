@@ -18,7 +18,7 @@ RUN apt-get update \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY main.py oauth.py netsuite.py mapper.py ghl.py ./
+COPY main.py oauth.py netsuite.py mapper.py ghl.py registro_eventos.py ./
 
 EXPOSE 8000
 
