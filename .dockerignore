@@ -1,0 +1,8 @@
+.git
+**/__pycache__/
+**/*.pyc
+.venv
+venv
+proyecto_completo.txt
+proyecto_completo_txt.py
+ghl-netsuite-api-appointment/
