@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 import hmac
 import json
 import os
+import re
 import threading
 import time
 
@@ -179,7 +180,14 @@ async def receive_appointment(request: Request):
         # =========================
         # Datos clave del payload
         # =========================
-        contact_id = payload.get("contact_id")
+        # Los IDs de GHL son alfanuméricos: se descarta cualquier otro carácter.
+        # Se corrige en el payload para que el lead se cree en NetSuite con el
+        # ID limpio (mapper) y para que la búsqueda SuiteQL no reciba comillas.
+        contact_id_original = payload.get("contact_id")
+        contact_id = re.sub(r"[^A-Za-z0-9]", "", str(contact_id_original or ""))
+        if contact_id != (contact_id_original or ""):
+            print(f"⚠️ contact_id con caracteres inválidos: {contact_id_original!r} → {contact_id!r}")
+        payload["contact_id"] = contact_id
         calendar = payload.get("calendar", {}) or {}
         appointment_id = calendar.get("appointmentId")
         appointment_status = calendar.get("appoinmentStatus")
